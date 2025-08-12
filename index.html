@@ -10,6 +10,7 @@
     .network-data { margin-top: 20px; }
     .request { border-left: 3px solid #0088cc; padding-left: 10px; }
     .response { border-left: 3px solid #4CAF50; padding-left: 10px; margin-top: 10px; }
+    .error { color: #ff0000; }
   </style>
 </head>
 <body>
@@ -30,176 +31,94 @@
   </div>
 
   <script>
-    // Configuration
-    const CONFIG = {
-      botName: 'ScoringLiveBot',
-      origin: 'https://shohanur-is.github.io'
-    };
+    // Self-executing function to avoid scope issues
+    (function() {
+      // Configuration
+      const TELEGRAM_CONFIG = {
+        botName: 'ScoringLiveBot',
+        origin: window.location.origin || 'https://shohanur-is.github.io'
+      };
 
-    // DOM Elements
-    const statusEl = document.getElementById('status');
-    const requestEl = document.getElementById('request-data');
-    const responseEl = document.getElementById('response-data');
-    const widgetContainer = document.getElementById('widget-container');
+      // DOM Elements
+      const statusEl = document.getElementById('status');
+      const requestEl = document.getElementById('request-data');
+      const responseEl = document.getElementById('response-data');
+      const widgetContainer = document.getElementById('widget-container');
 
-    // Monkey-patch fetch to intercept requests
-    const originalFetch = window.fetch;
-    window.fetch = async function(...args) {
-      const [url, options] = args;
-      
-      // Capture Telegram auth request
-      if (url.includes('oauth.telegram.org/auth')) {
-        requestEl.textContent = `URL: ${url}\n\nOptions: ${JSON.stringify(options || {}, null, 2)}`;
+      // Store original fetch
+      const originalFetch = window.fetch;
+
+      // Intercept network requests
+      window.fetch = async function(...args) {
+        const [url, options] = args;
         
-        try {
-          const response = await originalFetch.apply(this, args);
-          const clone = response.clone(); // Clone to read twice
-          
-          // Capture response data
-          const data = await clone.json();
-          responseEl.textContent = JSON.stringify(data, null, 2);
-          
-          return response;
-        } catch (error) {
-          responseEl.textContent = `Error: ${error.message}`;
-          throw error;
+        // Check if this is a Telegram auth request
+        if (url.includes('oauth.telegram.org/auth')) {
+          try {
+            // Show request data
+            requestEl.textContent = `URL: ${url}\nMethod: ${options?.method || 'GET'}\n\nHeaders: ${JSON.stringify(options?.headers || {}, null, 2)}`;
+            
+            // Make the actual request
+            const response = await originalFetch.apply(this, args);
+            const clone = response.clone();
+            
+            // Process response
+            try {
+              const data = await clone.json();
+              responseEl.textContent = JSON.stringify(data, null, 2);
+              statusEl.textContent = '✔ Received Telegram auth data';
+            } catch (e) {
+              responseEl.textContent = `Couldn't parse JSON: ${await clone.text()}`;
+            }
+            
+            return response;
+          } catch (error) {
+            responseEl.textContent = `Error: ${error.message}`;
+            statusEl.innerHTML = `<span class="error">✗ Network error: ${error.message}</span>`;
+            throw error;
+          }
         }
-      }
-      
-      return originalFetch.apply(this, args);
-    };
-
-    // Initialize Telegram Widget
-    function initTelegramWidget() {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = 'https://telegram.org/js/telegram-widget.js?22';
-      script.dataset.telegramLogin = CONFIG.botName;
-      script.dataset.size = 'large';
-      script.dataset.origin = CONFIG.origin;
-      script.dataset.onauth = 'onTelegramAuth';
-      
-      script.onload = () => {
-        statusEl.textContent = 'Telegram widget loaded. Click to authenticate...';
-      };
-      
-      script.onerror = () => {
-        statusEl.textContent = 'Failed to load Telegram widget';
-      };
-      
-      widgetContainer.appendChild(script);
-    }
-
-    // Telegram Auth Callback (optional)
-    function onTelegramAuth(user) {
-      console.log('Auth data:', user);
-    }
-    window.onTelegramAuth = onTelegramAuth;
-
-    // Initialize
-    initTelegramWidget();
-  </script>
-</body>
-</html><!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Telegram Network Data Capture</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
-    #status { padding: 10px; margin: 10px 0; border-radius: 4px; background: #f0f8ff; }
-    pre { background: #f5f5f5; padding: 15px; border-radius: 4px; overflow-x: auto; }
-    .network-data { margin-top: 20px; }
-    .request { border-left: 3px solid #0088cc; padding-left: 10px; }
-    .response { border-left: 3px solid #4CAF50; padding-left: 10px; margin-top: 10px; }
-  </style>
-</head>
-<body>
-  <h2>Telegram Network Data Capture</h2>
-  <div id="status">Initializing Telegram authentication...</div>
-  <div id="widget-container"></div>
-  
-  <div class="network-data">
-    <h3>Network Request Data:</h3>
-    <div class="request">
-      <h4>Request to Telegram:</h4>
-      <pre id="request-data">Waiting for request...</pre>
-    </div>
-    <div class="response">
-      <h4>Response from Telegram:</h4>
-      <pre id="response-data">Waiting for response...</pre>
-    </div>
-  </div>
-
-  <script>
-    // Configuration
-    const CONFIG = {
-      botName: 'ScoringLiveBot',
-      origin: 'https://shohanur-is.github.io'
-    };
-
-    // DOM Elements
-    const statusEl = document.getElementById('status');
-    const requestEl = document.getElementById('request-data');
-    const responseEl = document.getElementById('response-data');
-    const widgetContainer = document.getElementById('widget-container');
-
-    // Monkey-patch fetch to intercept requests
-    const originalFetch = window.fetch;
-    window.fetch = async function(...args) {
-      const [url, options] = args;
-      
-      // Capture Telegram auth request
-      if (url.includes('oauth.telegram.org/auth')) {
-        requestEl.textContent = `URL: ${url}\n\nOptions: ${JSON.stringify(options || {}, null, 2)}`;
         
-        try {
-          const response = await originalFetch.apply(this, args);
-          const clone = response.clone(); // Clone to read twice
-          
-          // Capture response data
-          const data = await clone.json();
-          responseEl.textContent = JSON.stringify(data, null, 2);
-          
-          return response;
-        } catch (error) {
-          responseEl.textContent = `Error: ${error.message}`;
-          throw error;
-        }
+        // Non-Telegram requests pass through
+        return originalFetch.apply(this, args);
+      };
+
+      // Initialize Telegram Widget
+      function initTelegramWidget() {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://telegram.org/js/telegram-widget.js?22';
+        script.dataset.telegramLogin = TELEGRAM_CONFIG.botName;
+        script.dataset.size = 'large';
+        script.dataset.origin = TELEGRAM_CONFIG.origin;
+        script.dataset.onauth = 'onTelegramAuth';
+        
+        script.onload = () => {
+          statusEl.textContent = 'Telegram widget loaded. Click to authenticate...';
+        };
+        
+        script.onerror = () => {
+          statusEl.innerHTML = '<span class="error">Failed to load Telegram widget script</span>';
+        };
+        
+        widgetContainer.appendChild(script);
       }
-      
-      return originalFetch.apply(this, args);
-    };
 
-    // Initialize Telegram Widget
-    function initTelegramWidget() {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = 'https://telegram.org/js/telegram-widget.js?22';
-      script.dataset.telegramLogin = CONFIG.botName;
-      script.dataset.size = 'large';
-      script.dataset.origin = CONFIG.origin;
-      script.dataset.onauth = 'onTelegramAuth';
-      
-      script.onload = () => {
-        statusEl.textContent = 'Telegram widget loaded. Click to authenticate...';
+      // Telegram Auth Callback
+      window.onTelegramAuth = function(user) {
+        console.log('Telegram user data:', user);
       };
-      
-      script.onerror = () => {
-        statusEl.textContent = 'Failed to load Telegram widget';
-      };
-      
-      widgetContainer.appendChild(script);
-    }
 
-    // Telegram Auth Callback (optional)
-    function onTelegramAuth(user) {
-      console.log('Auth data:', user);
-    }
-    window.onTelegramAuth = onTelegramAuth;
+      // Initialize
+      initTelegramWidget();
 
-    // Initialize
-    initTelegramWidget();
+      // Fallback timeout
+      setTimeout(() => {
+        if (responseEl.textContent === 'Waiting for response...') {
+          statusEl.innerHTML = '<span class="error">Authentication timed out. Try refreshing.</span>';
+        }
+      }, 15000);
+    })(); // Immediately invoked function expression
   </script>
 </body>
 </html>

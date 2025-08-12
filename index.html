@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Auth Data Inspector</title>
+    <title>Telegram Authentication Inspector</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary: #0088cc;
+            --primary-dark: #006699;
             --secondary: #5d8aa8;
             --success: #28a745;
             --danger: #dc3545;
+            --warning: #ffc107;
             --dark: #2c3e50;
             --light: #f8f9fa;
             --gray: #6c757d;
             --border: #dee2e6;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
         }
         
         * {
@@ -32,14 +36,15 @@
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
         }
         
         header {
             text-align: center;
             padding: 30px 0;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            position: relative;
         }
         
         h1 {
@@ -53,13 +58,30 @@
             font-size: 1.2rem;
             color: var(--gray);
             max-width: 700px;
-            margin: 0 auto;
+            margin: 0 auto 15px;
+        }
+        
+        .telegram-logo {
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 10px rgba(0, 136, 204, 0.3);
+        }
+        
+        .telegram-logo i {
+            font-size: 28px;
+            color: white;
         }
         
         .card {
             background: white;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--card-shadow);
             overflow: hidden;
             margin-bottom: 30px;
             transition: transform 0.3s ease;
@@ -70,7 +92,7 @@
         }
         
         .card-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             padding: 20px;
             display: flex;
@@ -129,6 +151,7 @@
             max-height: 300px;
             overflow-y: auto;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+            min-height: 100px;
         }
         
         .status {
@@ -154,6 +177,11 @@
             border-left: 4px solid var(--danger);
         }
         
+        .status.warning {
+            background: #fff3cd;
+            border-left: 4px solid var(--warning);
+        }
+        
         .btn {
             display: inline-flex;
             align-items: center;
@@ -171,7 +199,7 @@
         }
         
         .btn:hover {
-            background: #0078b4;
+            background: var(--primary-dark);
             transform: translateY(-2px);
             box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
         }
@@ -194,6 +222,7 @@
             background: var(--light);
             border-radius: 8px;
             margin: 20px 0;
+            min-height: 60px;
         }
         
         .instructions {
@@ -223,6 +252,95 @@
             padding: 2px 6px;
             border-radius: 4px;
             font-family: monospace;
+            display: inline-block;
+            margin: 3px 0;
+        }
+        
+        .instructions pre {
+            background: #2c3e50;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Consolas', monospace;
+        }
+        
+        .verification-steps {
+            background: #e8f5e9;
+            border-left: 4px solid var(--success);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .step {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ccc;
+        }
+        
+        .step:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .hash-comparison {
+            display: flex;
+            margin: 15px 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .hash-section {
+            flex: 1;
+            padding: 15px;
+        }
+        
+        .hash-section.received {
+            background: #e7f3fe;
+            border-right: 1px solid var(--border);
+        }
+        
+        .hash-section.computed {
+            background: #e8f5e9;
+        }
+        
+        .hash-match {
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+            background: var(--success);
+            color: white;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .hash-mismatch {
+            text-align: center;
+            padding: 15px;
+            font-weight: bold;
+            background: var(--danger);
+            color: white;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
         }
         
         footer {
@@ -231,6 +349,52 @@
             padding: 20px;
             color: var(--gray);
             font-size: 0.9rem;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            background: white;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         
         @media (max-width: 768px) {
@@ -258,192 +422,418 @@
                 font-size: 0.9rem;
                 padding: 10px;
             }
+            
+            .hash-comparison {
+                flex-direction: column;
+            }
+            
+            .hash-section.received {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Telegram Auth Data Inspector</h1>
-            <p class="subtitle">Capture and analyze Telegram authentication payloads with this comprehensive inspector tool</p>
+            <div class="telegram-logo">
+                <i class="fab fa-telegram"></i>
+            </div>
+            <h1>Telegram Authentication Inspector</h1>
+            <p class="subtitle">Capture, verify, and understand Telegram authentication payloads</p>
         </header>
         
         <div class="card">
             <div class="card-header">
-                <div class="icon">📱</div>
-                <h2>Telegram Widget</h2>
+                <div class="icon"><i class="fas fa-sign-in-alt"></i></div>
+                <h2>Authentication Process</h2>
             </div>
             <div class="card-body">
                 <div class="status info">
-                    Click the Telegram button below to authenticate and capture the payload
+                    <div class="loader"></div>
+                    <span>Click the Telegram button to start authentication</span>
                 </div>
                 
                 <div class="widget-container" id="widget-container">
                     <!-- Telegram widget will be loaded here -->
                 </div>
                 
-                <div class="status success" id="auth-status">
-                    Waiting for authentication...
+                <div class="status warning" id="auth-status">
+                    <i class="fas fa-info-circle"></i> Waiting for authentication...
                 </div>
             </div>
         </div>
         
-        <div class="card">
-            <div class="card-header">
-                <div class="icon">📤</div>
-                <h2>Request Payload</h2>
-            </div>
-            <div class="card-body">
-                <div class="data-container">
-                    <div class="data-title">
-                        <div class="icon">🔍</div>
-                        <h3>Sent to Telegram</h3>
+        <div class="tabs">
+            <div class="tab active" data-tab="payload">Payload Data</div>
+            <div class="tab" data-tab="verification">Hash Verification</div>
+            <div class="tab" data-tab="documentation">Documentation</div>
+        </div>
+        
+        <div class="tab-content active" id="payload-tab">
+            <div class="card">
+                <div class="card-header">
+                    <div class="icon"><i class="fas fa-code"></i></div>
+                    <h2>Authorization Payload</h2>
+                </div>
+                <div class="card-body">
+                    <div class="data-container">
+                        <div class="data-title">
+                            <div class="icon"><i class="fas fa-paper-plane"></i></div>
+                            <h3>Request Sent to Telegram</h3>
+                        </div>
+                        <pre class="data-content" id="request-payload">No request data captured yet. Authenticate to see payload.</pre>
                     </div>
-                    <pre class="data-content" id="request-payload">{
-    "bot_id": "5955048230",
-    "origin": "https://shohanur-is.github.io",
-    "embed": 1,
-    "return_to": "https://shohanur-is.github.io/telegram-auth-data/"
-}</pre>
-                </div>
-                
-                <div class="data-title">
-                    <div class="icon">ℹ️</div>
-                    <h3>Request Information</h3>
-                </div>
-                <div class="data-content">
-Endpoint: https://oauth.telegram.org/auth
-Method: GET
-Content-Type: application/x-www-form-urlencoded
-                </div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <div class="icon">📥</div>
-                <h2>Response Data</h2>
-            </div>
-            <div class="card-body">
-                <div class="data-container">
-                    <div class="data-title">
-                        <div class="icon">🔍</div>
-                        <h3>Received from Telegram</h3>
+                    
+                    <div class="data-container">
+                        <div class="data-title">
+                            <div class="icon"><i class="fas fa-download"></i></div>
+                            <h3>Response from Telegram</h3>
+                        </div>
+                        <pre class="data-content" id="response-data">No response data captured yet. Authenticate to see response.</pre>
                     </div>
-                    <pre class="data-content" id="response-data">{
-    "user": {
-        "id": 8189516013,
-        "first_name": "Shohanur",
-        "auth_date": 1754992922,
-        "hash": "2ed57e2d65daab69e1c60b4e3327b5ee50e0aa12484bc31c7c5e66494cc2e14e"
-    },
-    "html": "&lt;button class=\"btn tgme_widget_login_button\" onclick=\"return TWidgetLogin.auth();\"&gt;&lt;i class=\"tgme_widget_login_button_icon\"&gt;&lt;/i&gt;Log in as &lt;span dir=\"auto\"&gt;Shohanur&lt;/span&gt;&lt;/button&gt;&lt;i class=\"tgme_widget_login_user_photo bgcolor0\" data-content=\"S\" onclick=\"return TWidgetLogin.auth();\"&gt;&lt;/i&gt;",
-    "origin": "https://shohanur-is.github.io"
+                    
+                    <div class="data-container">
+                        <div class="data-title">
+                            <div class="icon"><i class="fas fa-user"></i></div>
+                            <h3>User Information</h3>
+                        </div>
+                        <pre class="data-content" id="user-data">No user data captured yet. Complete authentication to see user details.</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="verification-tab">
+            <div class="card">
+                <div class="card-header">
+                    <div class="icon"><i class="fas fa-shield-alt"></i></div>
+                    <h2>Hash Verification</h2>
+                </div>
+                <div class="card-body">
+                    <div class="verification-steps">
+                        <h3><i class="fas fa-check-circle"></i> Verification Steps</h3>
+                        
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <strong>Create data-check-string</strong>
+                            <p>Concatenate all received fields (except hash) sorted alphabetically in the format <code>key=&lt;value&gt;</code> with line feed separator:</p>
+                            <pre id="data-check-string">auth_date=&lt;timestamp&gt;\nfirst_name=&lt;name&gt;\nid=&lt;user_id&gt;\n...</pre>
+                        </div>
+                        
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <strong>Compute secret key</strong>
+                            <p>Compute SHA256 hash of your bot token:</p>
+                            <pre>secret_key = SHA256(bot_token)</pre>
+                        </div>
+                        
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <strong>Compute HMAC-SHA256 signature</strong>
+                            <p>Using the secret key, compute HMAC-SHA256 signature of the data-check-string:</p>
+                            <pre>computed_hash = HMAC_SHA256(data_check_string, secret_key)</pre>
+                        </div>
+                        
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <strong>Compare hashes</strong>
+                            <p>Compare the computed hash with the received hash value (case-insensitive):</p>
+                            <pre>if (computed_hash == received_hash) {
+    // Data is authentic
+} else {
+    // Data has been tampered with
 }</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="hash-comparison">
+                        <div class="hash-section received">
+                            <h4><i class="fas fa-download"></i> Received Hash</h4>
+                            <pre id="received-hash">Not available</pre>
+                        </div>
+                        <div class="hash-section computed">
+                            <h4><i class="fas fa-calculator"></i> Computed Hash</h4>
+                            <pre id="computed-hash">Not available</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="hash-match">
+                        <i class="fas fa-check-circle"></i> Hashes match! Data is authentic.
+                    </div>
+                    
+                    <div class="hash-mismatch">
+                        <i class="fas fa-exclamation-circle"></i> Hashes do not match! Data may be tampered.
+                    </div>
+                    
+                    <div class="status warning">
+                        <i class="fas fa-exclamation-triangle"></i> Note: Actual verification requires your bot token and must be done server-side.
+                    </div>
                 </div>
-                
-                <div class="data-title">
-                    <div class="icon">👤</div>
-                    <h3>User Information</h3>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="documentation-tab">
+            <div class="card">
+                <div class="card-header">
+                    <div class="icon"><i class="fas fa-book"></i></div>
+                    <h2>Official Documentation</h2>
                 </div>
-                <pre class="data-content" id="user-data">ID: 8189516013
-First Name: Shohanur
-Auth Date: 1754992922
-Hash: 2ed57e2d65daab69e1c60b4e3327b5ee50e0aa12484bc31c7c5e66494cc2e14e</pre>
+                <div class="card-body">
+                    <div class="instructions">
+                        <h3><i class="fas fa-info-circle"></i> Receiving Authorization Data</h3>
+                        <p>After successful authorization, Telegram provides data in two ways:</p>
+                        <ol>
+                            <li><strong>Redirect</strong> to the URL specified in <code>data-auth-url</code> with parameters: 
+                                <code>id</code>, <code>first_name</code>, <code>last_name</code>, 
+                                <code>username</code>, <code>photo_url</code>, <code>auth_date</code>, 
+                                and <code>hash</code></li>
+                            <li><strong>Callback function</strong> specified in <code>data-onauth</code> with a JSON object containing the same fields</li>
+                        </ol>
+                        
+                        <h3><i class="fas fa-shield-alt"></i> Verifying Authorization</h3>
+                        <p>To verify the authentication and data integrity:</p>
+                        <ol>
+                            <li>Compare the received <code>hash</code> parameter with the hexadecimal representation of the HMAC-SHA-256 signature</li>
+                            <li>The signature is computed from the <code>data-check-string</code> using the SHA256 hash of the bot's token as the secret key</li>
+                        </ol>
+                        
+                        <h4>Data Check String Format</h4>
+                        <pre>key1=&lt;value1&gt;\nkey2=&lt;value2&gt;\n...keyN=&lt;valueN&gt;</pre>
+                        <p>Where:</p>
+                        <ul>
+                            <li>Keys are sorted alphabetically</li>
+                            <li>Only include fields present in the received data (except hash)</li>
+                            <li>Each key-value pair is separated by a newline character (<code>\n</code>, 0x0A)</li>
+                        </ul>
+                        
+                        <h4>Verification Process</h4>
+                        <pre>data_check_string = ...
+secret_key = SHA256(bot_token)
+if (hex(HMAC_SHA256(data_check_string, secret_key)) == hash) {
+    // Data is authentic
+}</pre>
+                        
+                        <h4>Checking Auth Date</h4>
+                        <p>To prevent use of outdated data, check the <code>auth_date</code> field which contains a Unix timestamp:</p>
+                        <pre>current_time = get_current_unix_timestamp()
+if (current_time - auth_date > 86400) { // 24 hours
+    // Data is too old
+}</pre>
+                    </div>
+                </div>
             </div>
         </div>
         
         <div class="card">
             <div class="card-header">
-                <div class="icon">📋</div>
+                <div class="icon"><i class="fas fa-copy"></i></div>
                 <h2>Data Tools</h2>
             </div>
             <div class="card-body">
-                <button id="copy-btn" class="btn">
-                    <i>📋</i> Copy All Data to Clipboard
+                <button id="copy-btn" class="btn" disabled>
+                    <i class="fas fa-copy"></i> Copy Payload Data
                 </button>
             </div>
         </div>
         
-        <div class="instructions">
-            <h3>How to Use This Inspector</h3>
-            <ul>
-                <li>Click the Telegram button above to authenticate with your account</li>
-                <li>The request payload shows the data sent to Telegram's authentication endpoint</li>
-                <li>The response data shows the information received from Telegram</li>
-                <li>User information displays the authenticated user details</li>
-                <li>Use the "Copy All Data" button to copy the captured information to your clipboard</li>
-                <li>For API integration, use the payload data in your backend verification process</li>
-            </ul>
-        </div>
-        
         <footer>
-            <p>Telegram Auth Data Inspector | Designed for Telegram Bot Developers</p>
-            <p>Note: This tool captures and displays authentication data for development purposes only</p>
+            <p>Telegram Auth Data Inspector | Based on Official Telegram Documentation</p>
+            <p>Note: This tool demonstrates the authentication flow. Actual verification should be done server-side.</p>
         </footer>
     </div>
-
-    <!-- Telegram Login Widget -->
-    <script async src="https://telegram.org/js/telegram-widget.js?22"
-            data-telegram-login="ScoringLiveBot"
-            data-size="large"
-            data-userpic="false"
-            data-request-access="write"
-            data-origin="https://shohanur-is.github.io"
-            data-onauth="onTelegramAuth">
-    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const authStatus = document.getElementById('auth-status');
             const copyBtn = document.getElementById('copy-btn');
+            const requestPayloadEl = document.getElementById('request-payload');
+            const responseDataEl = document.getElementById('response-data');
             const userDataEl = document.getElementById('user-data');
+            const widgetContainer = document.getElementById('widget-container');
+            const dataCheckStringEl = document.getElementById('data-check-string');
+            const receivedHashEl = document.getElementById('received-hash');
+            const computedHashEl = document.getElementById('computed-hash');
+            const hashMatchEl = document.querySelector('.hash-match');
+            const hashMismatchEl = document.querySelector('.hash-mismatch');
+            
+            // Store captured data
+            let capturedData = {
+                request: null,
+                response: null,
+                user: null
+            };
+            
+            // Initialize Telegram Widget
+            function initTelegramWidget() {
+                const script = document.createElement('script');
+                script.async = true;
+                script.src = 'https://telegram.org/js/telegram-widget.js?22';
+                script.dataset.telegramLogin = 'ScoringLiveBot';
+                script.dataset.size = 'large';
+                script.dataset.userpic = 'false';
+                script.dataset.requestAccess = 'write';
+                script.dataset.origin = 'https://shohanur-is.github.io';
+                script.dataset.onauth = 'onTelegramAuth';
+                
+                script.onload = () => {
+                    authStatus.className = 'status info';
+                    authStatus.innerHTML = '<i class="fas fa-check-circle"></i> Widget loaded. Click to authenticate...';
+                };
+                
+                script.onerror = () => {
+                    authStatus.className = 'status error';
+                    authStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to load Telegram widget';
+                };
+                
+                widgetContainer.appendChild(script);
+            }
             
             // Called by the Telegram widget after user authorizes
             window.onTelegramAuth = function(user) {
                 authStatus.className = 'status success';
-                authStatus.textContent = '✔ Authentication successful! User data received.';
+                authStatus.innerHTML = '<i class="fas fa-check-circle"></i> Authentication successful!';
                 
-                // Display user data
-                userDataEl.textContent = `ID: ${user.id}\nFirst Name: ${user.first_name}\nAuth Date: ${user.auth_date}\nHash: ${user.hash}`;
+                // Store and display user data
+                capturedData.user = user;
+                userDataEl.textContent = JSON.stringify(user, null, 2);
+                
+                // Generate data-check-string for verification
+                generateDataCheckString(user);
                 
                 // Enable copy button
                 copyBtn.disabled = false;
             };
             
+            // Generate data-check-string as per Telegram documentation
+            function generateDataCheckString(user) {
+                // Create a copy of the user object without the hash property
+                const { hash, ...data } = user;
+                
+                // Sort keys alphabetically
+                const sortedKeys = Object.keys(data).sort();
+                
+                // Create key-value pairs
+                const keyValuePairs = sortedKeys.map(key => {
+                    return `${key}=${data[key]}`;
+                });
+                
+                // Join with newline character
+                const dataCheckString = keyValuePairs.join('\n');
+                
+                // Display the data-check-string
+                dataCheckStringEl.textContent = dataCheckString;
+                
+                // Display received hash
+                receivedHashEl.textContent = user.hash || 'Not available';
+                
+                // For demo purposes - in reality this would be computed server-side
+                computedHashEl.textContent = 'HMAC-SHA256 computation requires bot token (server-side)';
+                
+                // Show note about server-side verification
+                hashMatchEl.style.display = 'none';
+                hashMismatchEl.style.display = 'none';
+            }
+            
+            // Intercept network requests
+            const originalFetch = window.fetch;
+            window.fetch = async function(...args) {
+                const [url, options] = args;
+                
+                // Check if this is the Telegram auth request
+                if (url.includes('oauth.telegram.org/auth')) {
+                    try {
+                        // Capture request payload
+                        const requestUrl = new URL(url);
+                        const requestParams = Object.fromEntries(requestUrl.searchParams.entries());
+                        
+                        capturedData.request = requestParams;
+                        requestPayloadEl.textContent = JSON.stringify(requestParams, null, 2);
+                        
+                        authStatus.className = 'status info';
+                        authStatus.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Authenticating with Telegram...';
+                        
+                        // Make the actual request
+                        const response = await originalFetch.apply(this, args);
+                        const clone = response.clone();
+                        
+                        // Capture response data
+                        try {
+                            const data = await clone.json();
+                            capturedData.response = data;
+                            responseDataEl.textContent = JSON.stringify(data, null, 2);
+                            
+                            // If response contains user data directly
+                            if (data.user) {
+                                userDataEl.textContent = JSON.stringify(data.user, null, 2);
+                                capturedData.user = data.user;
+                                generateDataCheckString(data.user);
+                            }
+                        } catch (e) {
+                            const text = await clone.text();
+                            capturedData.response = text;
+                            responseDataEl.textContent = text;
+                        }
+                        
+                        return response;
+                    } catch (error) {
+                        authStatus.className = 'status error';
+                        authStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error: ${error.message}`;
+                        throw error;
+                    }
+                }
+                
+                return originalFetch.apply(this, args);
+            };
+            
             // Copy button functionality
             copyBtn.addEventListener('click', async function() {
-                const requestPayload = document.getElementById('request-payload').textContent;
-                const responseData = document.getElementById('response-data').textContent;
-                const userData = document.getElementById('user-data').textContent;
-                
-                const allData = `===== REQUEST PAYLOAD =====\n${requestPayload}\n\n===== RESPONSE DATA =====\n${responseData}\n\n===== USER INFORMATION =====\n${userData}`;
+                const allData = {
+                    request: capturedData.request,
+                    response: capturedData.response,
+                    user: capturedData.user
+                };
                 
                 try {
-                    await navigator.clipboard.writeText(allData);
-                    authStatus.className = 'status success';
-                    authStatus.textContent = '✔ All data copied to clipboard!';
+                    await navigator.clipboard.writeText(JSON.stringify(allData, null, 2));
                     
                     // Visual feedback
-                    copyBtn.innerHTML = '<i>✓</i> Copied!';
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.style.background = 'var(--success)';
+                    
                     setTimeout(() => {
-                        copyBtn.innerHTML = '<i>📋</i> Copy All Data to Clipboard';
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Payload Data';
                         copyBtn.style.background = '';
                     }, 2000);
+                    
+                    authStatus.className = 'status success';
+                    authStatus.innerHTML = '<i class="fas fa-check-circle"></i> Payload copied to clipboard!';
                 } catch (err) {
                     authStatus.className = 'status error';
-                    authStatus.textContent = '✗ Failed to copy data. Please copy manually.';
+                    authStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to copy data. Please copy manually.';
                 }
             });
             
-            // Simulate authentication for demonstration
-            setTimeout(() => {
-                if (authStatus.textContent === 'Waiting for authentication...') {
-                    authStatus.className = 'status info';
-                    authStatus.textContent = 'ℹ️ Click the Telegram button to authenticate and capture payload data';
-                }
-            }, 5000);
+            // Tab functionality
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and content
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+            
+            // Initialize the widget
+            initTelegramWidget();
         });
     </script>
 </body>

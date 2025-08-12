@@ -1,134 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>Telegram Login Widget</title>
+  <meta charset="utf-8">
+  <title>Telegram Auth Data</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-    pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
-    .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
-    .info { background: #e7f3fe; border-left: 5px solid #2196F3; }
-    .success { background: #ddffdd; border-left: 5px solid #4CAF50; }
-    .error { background: #ffdddd; border-left: 5px solid #f44336; }
-    button { padding: 8px 16px; background: #0088cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    button:disabled { background: #cccccc; }
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
+    #status { padding: 10px; margin: 10px 0; border-radius: 4px; background: #f0f8ff; }
+    #payload { background: #f5f5f5; padding: 15px; border-radius: 4px; white-space: pre-wrap; }
+    button { padding: 8px 16px; background: #0088cc; color: white; border: none; border-radius: 4px; margin-top: 10px; }
+    .error { color: #ff0000; }
   </style>
 </head>
 <body>
-  <h2>Telegram Login Widget</h2>
-  
-  <div id="status" class="status info">
-    Click the Telegram button below to authorize...
-  </div>
-  
-  <!-- Telegram Widget -->
-  <div id="telegram-widget"></div>
-  
-  <h3>Response Data:</h3>
-  <pre id="payload">Waiting for response...</pre>
-  
-  <button id="copy" disabled>Copy Payload</button>
+  <h2>Telegram Login Data</h2>
+  <div id="status">Initializing Telegram widget...</div>
+  <div id="widget-container"></div>
+  <h3>Auth Data:</h3>
+  <pre id="payload">Waiting for authentication...</pre>
+  <button id="copy-btn" disabled>Copy Data</button>
 
   <script>
+    // Configuration
+    const config = {
+      botName: 'ScoringLiveBot',
+      botId: '5955048230',
+      origin: 'https://shohanur-is.github.io'
+    };
+
     // DOM elements
     const statusEl = document.getElementById('status');
     const payloadEl = document.getElementById('payload');
-    const copyBtn = document.getElementById('copy');
-    const widgetContainer = document.getElementById('telegram-widget');
-    
-    // State
-    let authData = null;
-    
-    // Create widget dynamically
+    const copyBtn = document.getElementById('copy-btn');
+    const widgetContainer = document.getElementById('widget-container');
+
+    // Initialize the widget
     function initTelegramWidget() {
       const script = document.createElement('script');
       script.async = true;
       script.src = 'https://telegram.org/js/telegram-widget.js?22';
-      script.setAttribute('data-telegram-login', 'ScoringLiveBot');
+      script.setAttribute('data-telegram-login', config.botName);
       script.setAttribute('data-size', 'large');
       script.setAttribute('data-userpic', 'false');
       script.setAttribute('data-request-access', 'write');
-      script.setAttribute('data-origin', window.location.origin);
+      script.setAttribute('data-origin', config.origin);
       script.setAttribute('data-onauth', 'onTelegramAuth');
       
-      // Add error event listener before appending
-      script.onerror = function() {
-        showError('Failed to load Telegram widget script');
+      script.onload = () => {
+        statusEl.textContent = 'Widget loaded. Click the Telegram button to authenticate.';
+      };
+      
+      script.onerror = () => {
+        statusEl.innerHTML = '<span class="error">Failed to load Telegram widget. Please refresh the page.</span>';
       };
       
       widgetContainer.appendChild(script);
     }
-    
-    // Handle successful auth
+
+    // Auth callback function
     function onTelegramAuth(user) {
-      authData = user;
-      payloadEl.textContent = JSON.stringify(user, null, 2);
+      const authData = {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name || '',
+        username: user.username || '',
+        auth_date: user.auth_date,
+        hash: user.hash
+      };
       
-      statusEl.className = 'status success';
+      payloadEl.textContent = JSON.stringify(authData, null, 2);
       statusEl.textContent = '✔ Authentication successful!';
-      
       copyBtn.disabled = false;
       
-      // You can now use the authData as needed
-      console.log('Received auth data:', authData);
-      
-      // If you need to send this to your backend:
-      // sendToBackend(authData);
+      // Log to console for debugging
+      console.log('Telegram auth data:', authData);
     }
     window.onTelegramAuth = onTelegramAuth;
-    
-    // Error handling
-    function showError(message) {
-      statusEl.className = 'status error';
-      statusEl.textContent = `✗ ${message}`;
-    }
-    
-    // Copy functionality
-    copyBtn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(JSON.stringify(authData, null, 2));
-        statusEl.className = 'status success';
-        statusEl.textContent = '✓ Payload copied to clipboard!';
-      } catch (err) {
-        showError('Failed to copy. Please select and copy manually.');
-      }
-    });
-    
-    // Monitor network requests (for debugging)
-    if (window.performance) {
-      const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          if (entry.name.includes('get?bot_id')) {
-            console.log('Telegram auth request detected:', entry.name);
-          }
+
+    // Copy button handler
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(payloadEl.textContent)
+        .then(() => {
+          const originalText = statusEl.textContent;
+          statusEl.textContent = 'Data copied to clipboard!';
+          setTimeout(() => statusEl.textContent = originalText, 2000);
+        })
+        .catch(err => {
+          statusEl.innerHTML = '<span class="error">Failed to copy. Please select and copy manually.</span>';
         });
-      });
-      observer.observe({entryTypes: ['resource']});
-    }
-    
+    });
+
+    // Error handling
+    window.addEventListener('telegram-widget-load-error', (e) => {
+      statusEl.innerHTML = `<span class="error">Widget error: ${e.detail.error}</span>`;
+      console.error('Telegram Widget Error:', e.detail.error);
+    });
+
     // Initialize
     initTelegramWidget();
-    
-    // Fallback check
+
+    // Timeout check
     setTimeout(() => {
-      if (!authData) {
-        showError('Widget loading timed out. Check console for details.');
+      if (payloadEl.textContent === 'Waiting for authentication...') {
+        statusEl.innerHTML = `
+          <span class="error">
+            Widget not loaded. Please check:<br>
+            1. Bot username (@${config.botName}) is correct<br>
+            2. Domain is set in BotFather (/setdomain)<br>
+            3. No browser extensions are blocking Telegram
+          </span>
+        `;
       }
     }, 10000);
-    
-    // Optional: Function to send data to your backend
-    function sendToBackend(data) {
-      fetch('your-backend-endpoint', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      })
-      .then(response => response.json())
-      .then(data => console.log('Backend response:', data))
-      .catch(error => console.error('Error sending to backend:', error));
-    }
   </script>
 </body>
 </html>

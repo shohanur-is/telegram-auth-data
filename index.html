@@ -1,29 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Telegram Login Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Auth Data Capture</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0088cc;
+            text-align: center;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .data-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .loading {
+            background: #e7f3fe;
+            border-left: 4px solid #0088cc;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            background: #ffebee;
+            border-left: 4px solid #dc3545;
+        }
+        .auth-button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 16px;
+            background: #0088cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Telegram Login Widget Example</h1>
-  
-  <!-- Telegram Login Widget -->
-  <script async src="https://telegram.org/js/telegram-widget.js?22"
-    data-telegram-login="ScoringLiveBot"
-    data-size="large"
-    data-onauth="onTelegramAuth"
-    data-request-access="write">
-  </script>
+    <div class="container">
+        <h1>Telegram Auth Data Capture</h1>
+        
+        <div class="status loading" id="status">
+            Click the button below to authenticate with Telegram
+        </div>
+        
+        <a href="https://oauth.telegram.org/auth?bot_id=5955048230&origin=https://shohanur-is.github.io&embed=1&return_to=https://shohanur-is.github.io/telegram-auth-data/" 
+           class="auth-button">
+           Login with Telegram
+        </a>
+        
+        <div class="data-section">
+            <h2>Received Auth Data</h2>
+            <pre id="auth-data">No data received yet. After authentication, you'll be redirected back with the data in URL hash.</pre>
+        </div>
+        
+        <div class="data-section">
+            <h2>Data-Check-String</h2>
+            <pre id="data-check-string">Will be generated after authentication</pre>
+        </div>
+        
+        <button id="copy-btn">Copy All Data</button>
+    </div>
 
-  <!-- Container for displaying the Telegram auth response -->
-  <pre id="tg-response" style="background:#f4f4f4; padding:1em; border:1px solid #ccc;"></pre>
-
-  <script>
-    function onTelegramAuth(user) {
-      // Just show the raw object as JSON
-      document.getElementById("tg-response").textContent = JSON.stringify(user, null, 2);
-    }
-  </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusEl = document.getElementById('status');
+            const authDataEl = document.getElementById('auth-data');
+            const dataCheckStringEl = document.getElementById('data-check-string');
+            const copyBtn = document.getElementById('copy-btn');
+            
+            let authData = null;
+            let dataCheckString = null;
+            
+            // Check for data in URL hash (redirect flow)
+            if (window.location.hash) {
+                try {
+                    const hash = window.location.hash.substring(1);
+                    const params = new URLSearchParams(hash);
+                    
+                    // Extract all auth data from URL
+                    authData = {
+                        id: params.get('id'),
+                        first_name: params.get('first_name'),
+                        last_name: params.get('last_name') || null,
+                        username: params.get('username') || null,
+                        photo_url: params.get('photo_url') || null,
+                        auth_date: params.get('auth_date'),
+                        hash: params.get('hash')
+                    };
+                    
+                    // Display the raw auth data
+                    authDataEl.textContent = JSON.stringify(authData, null, 2);
+                    
+                    // Generate data-check-string
+                    dataCheckString = generateDataCheckString(authData);
+                    dataCheckStringEl.textContent = dataCheckString;
+                    
+                    statusEl.className = 'status success';
+                    statusEl.textContent = 'Authentication successful! Data received from Telegram.';
+                    
+                    // Clean up URL
+                    history.replaceState(null, null, ' ');
+                    
+                } catch (error) {
+                    statusEl.className = 'status error';
+                    statusEl.textContent = `Error parsing auth data: ${error.message}`;
+                }
+            }
+            
+            // Generate data-check-string as per Telegram's requirements
+            function generateDataCheckString(authData) {
+                // Create a copy without the hash property
+                const { hash, ...dataForCheck } = authData;
+                
+                // Prepare array of key=value pairs
+                const dataCheckArr = [];
+                for (const key in dataForCheck) {
+                    if (dataForCheck[key] !== null) { // Skip null values
+                        dataCheckArr.push(`${key}=${dataForCheck[key]}`);
+                    }
+                }
+                
+                // Sort alphabetically
+                dataCheckArr.sort();
+                
+                // Join with newline character
+                return dataCheckArr.join('\n');
+            }
+            
+            // Copy button functionality
+            copyBtn.addEventListener('click', function() {
+                if (!authData) return;
+                
+                const allData = {
+                    authData: authData,
+                    dataCheckString: dataCheckString,
+                    verificationNote: "Note: Actual hash verification requires your bot token and should be done server-side"
+                };
+                
+                navigator.clipboard.writeText(JSON.stringify(allData, null, 2))
+                    .then(() => {
+                        statusEl.className = 'status success';
+                        statusEl.textContent = 'All data copied to clipboard!';
+                        
+                        // Visual feedback
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Copy All Data';
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        statusEl.className = 'status error';
+                        statusEl.textContent = 'Failed to copy data. Please copy manually.';
+                    });
+            });
+        });
+    </script>
 </body>
 </html>

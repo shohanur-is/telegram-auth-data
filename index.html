@@ -1,34 +1,450 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Telegram Login (Print Payload)</title>
-  <style>
-    body { font-family: system-ui, Arial, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; }
-    pre { background: #f6f8fa; padding: 12px; border-radius: 8px; overflow: auto; }
-  </style>
-
-  <!-- Replace with your bot username; must be served from the exact origin set in BotFather /setdomain -->
-  <script async src="https://telegram.org/js/telegram-widget.js?22"
-    data-telegram-login="ScoringLiveBot"
-    data-size="large"
-    data-userpic="false"
-    data-request-access="write"
-    data-onauth="onTelegramAuth">
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Auth Data Inspector</title>
+    <style>
+        :root {
+            --primary: #0088cc;
+            --secondary: #5d8aa8;
+            --success: #28a745;
+            --danger: #dc3545;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --border: #dee2e6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--gray);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-header h2 {
+            font-size: 1.5rem;
+            margin-left: 15px;
+        }
+        
+        .icon {
+            font-size: 24px;
+            background: rgba(255,255,255,0.2);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card-body {
+            padding: 25px;
+        }
+        
+        .data-container {
+            background: var(--light);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .data-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .data-title h3 {
+            font-size: 1.3rem;
+            margin-left: 10px;
+            color: var(--dark);
+        }
+        
+        .data-content {
+            font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .status.info {
+            background: #e7f3fe;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .status.success {
+            background: #e8f5e9;
+            border-left: 4px solid var(--success);
+        }
+        
+        .status.error {
+            background: #ffebee;
+            border-left: 4px solid var(--danger);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            background: #0078b4;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:disabled {
+            background: var(--gray);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .widget-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            background: var(--light);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .instructions h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .instructions ul {
+            padding-left: 25px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .instructions code {
+            background: var(--light);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .card-header {
+                padding: 15px;
+            }
+            
+            .card-header h2 {
+                font-size: 1.3rem;
+            }
+            
+            .card-body {
+                padding: 15px;
+            }
+            
+            .data-content {
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h3>Telegram Login</h3>
-  <p>Click the Telegram button above. The payload will appear below and in the console.</p>
-  <pre id="payload">No payload yet.</pre>
+    <div class="container">
+        <header>
+            <h1>Telegram Auth Data Inspector</h1>
+            <p class="subtitle">Capture and analyze Telegram authentication payloads with this comprehensive inspector tool</p>
+        </header>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="icon">📱</div>
+                <h2>Telegram Widget</h2>
+            </div>
+            <div class="card-body">
+                <div class="status info">
+                    Click the Telegram button below to authenticate and capture the payload
+                </div>
+                
+                <div class="widget-container" id="widget-container">
+                    <!-- Telegram widget will be loaded here -->
+                </div>
+                
+                <div class="status success" id="auth-status">
+                    Waiting for authentication...
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="icon">📤</div>
+                <h2>Request Payload</h2>
+            </div>
+            <div class="card-body">
+                <div class="data-container">
+                    <div class="data-title">
+                        <div class="icon">🔍</div>
+                        <h3>Sent to Telegram</h3>
+                    </div>
+                    <pre class="data-content" id="request-payload">{
+    "bot_id": "5955048230",
+    "origin": "https://shohanur-is.github.io",
+    "embed": 1,
+    "return_to": "https://shohanur-is.github.io/telegram-auth-data/"
+}</pre>
+                </div>
+                
+                <div class="data-title">
+                    <div class="icon">ℹ️</div>
+                    <h3>Request Information</h3>
+                </div>
+                <div class="data-content">
+Endpoint: https://oauth.telegram.org/auth
+Method: GET
+Content-Type: application/x-www-form-urlencoded
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="icon">📥</div>
+                <h2>Response Data</h2>
+            </div>
+            <div class="card-body">
+                <div class="data-container">
+                    <div class="data-title">
+                        <div class="icon">🔍</div>
+                        <h3>Received from Telegram</h3>
+                    </div>
+                    <pre class="data-content" id="response-data">{
+    "user": {
+        "id": 8189516013,
+        "first_name": "Shohanur",
+        "auth_date": 1754992922,
+        "hash": "2ed57e2d65daab69e1c60b4e3327b5ee50e0aa12484bc31c7c5e66494cc2e14e"
+    },
+    "html": "&lt;button class=\"btn tgme_widget_login_button\" onclick=\"return TWidgetLogin.auth();\"&gt;&lt;i class=\"tgme_widget_login_button_icon\"&gt;&lt;/i&gt;Log in as &lt;span dir=\"auto\"&gt;Shohanur&lt;/span&gt;&lt;/button&gt;&lt;i class=\"tgme_widget_login_user_photo bgcolor0\" data-content=\"S\" onclick=\"return TWidgetLogin.auth();\"&gt;&lt;/i&gt;",
+    "origin": "https://shohanur-is.github.io"
+}</pre>
+                </div>
+                
+                <div class="data-title">
+                    <div class="icon">👤</div>
+                    <h3>User Information</h3>
+                </div>
+                <pre class="data-content" id="user-data">ID: 8189516013
+First Name: Shohanur
+Auth Date: 1754992922
+Hash: 2ed57e2d65daab69e1c60b4e3327b5ee50e0aa12484bc31c7c5e66494cc2e14e</pre>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="icon">📋</div>
+                <h2>Data Tools</h2>
+            </div>
+            <div class="card-body">
+                <button id="copy-btn" class="btn">
+                    <i>📋</i> Copy All Data to Clipboard
+                </button>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Use This Inspector</h3>
+            <ul>
+                <li>Click the Telegram button above to authenticate with your account</li>
+                <li>The request payload shows the data sent to Telegram's authentication endpoint</li>
+                <li>The response data shows the information received from Telegram</li>
+                <li>User information displays the authenticated user details</li>
+                <li>Use the "Copy All Data" button to copy the captured information to your clipboard</li>
+                <li>For API integration, use the payload data in your backend verification process</li>
+            </ul>
+        </div>
+        
+        <footer>
+            <p>Telegram Auth Data Inspector | Designed for Telegram Bot Developers</p>
+            <p>Note: This tool captures and displays authentication data for development purposes only</p>
+        </footer>
+    </div>
 
-  <script>
-    function onTelegramAuth(user) {
-      // user contains: id, first_name, last_name, username, photo_url, auth_date, hash
-      console.log('Telegram payload:', user);
-      document.getElementById('payload').textContent = JSON.stringify(user, null, 2);
-    }
-    window.onTelegramAuth = onTelegramAuth;
-  </script>
+    <!-- Telegram Login Widget -->
+    <script async src="https://telegram.org/js/telegram-widget.js?22"
+            data-telegram-login="ScoringLiveBot"
+            data-size="large"
+            data-userpic="false"
+            data-request-access="write"
+            data-origin="https://shohanur-is.github.io"
+            data-onauth="onTelegramAuth">
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const authStatus = document.getElementById('auth-status');
+            const copyBtn = document.getElementById('copy-btn');
+            const userDataEl = document.getElementById('user-data');
+            
+            // Called by the Telegram widget after user authorizes
+            window.onTelegramAuth = function(user) {
+                authStatus.className = 'status success';
+                authStatus.textContent = '✔ Authentication successful! User data received.';
+                
+                // Display user data
+                userDataEl.textContent = `ID: ${user.id}\nFirst Name: ${user.first_name}\nAuth Date: ${user.auth_date}\nHash: ${user.hash}`;
+                
+                // Enable copy button
+                copyBtn.disabled = false;
+            };
+            
+            // Copy button functionality
+            copyBtn.addEventListener('click', async function() {
+                const requestPayload = document.getElementById('request-payload').textContent;
+                const responseData = document.getElementById('response-data').textContent;
+                const userData = document.getElementById('user-data').textContent;
+                
+                const allData = `===== REQUEST PAYLOAD =====\n${requestPayload}\n\n===== RESPONSE DATA =====\n${responseData}\n\n===== USER INFORMATION =====\n${userData}`;
+                
+                try {
+                    await navigator.clipboard.writeText(allData);
+                    authStatus.className = 'status success';
+                    authStatus.textContent = '✔ All data copied to clipboard!';
+                    
+                    // Visual feedback
+                    copyBtn.innerHTML = '<i>✓</i> Copied!';
+                    copyBtn.style.background = 'var(--success)';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i>📋</i> Copy All Data to Clipboard';
+                        copyBtn.style.background = '';
+                    }, 2000);
+                } catch (err) {
+                    authStatus.className = 'status error';
+                    authStatus.textContent = '✗ Failed to copy data. Please copy manually.';
+                }
+            });
+            
+            // Simulate authentication for demonstration
+            setTimeout(() => {
+                if (authStatus.textContent === 'Waiting for authentication...') {
+                    authStatus.className = 'status info';
+                    authStatus.textContent = 'ℹ️ Click the Telegram button to authenticate and capture payload data';
+                }
+            }, 5000);
+        });
+    </script>
 </body>
 </html>

@@ -23,7 +23,13 @@
 <body>
   <h1>Telegram Login Widget — Show Raw Response</h1>
   <p class="meta">Make sure this page is served via <strong>HTTPS</strong> and your bot is linked to your domain in @BotFather (use <code>/setdomain</code>).</p>
-
+  <script>
+    function onTelegramAuth(user) {
+        console.log(onTelegramAuth);
+        console.log("I am in first function");
+        console.log(user);
+    }
+  </script>
   <div class="widget-wrap">
     <!-- Replace ScoringLiveBot with your bot username -->
     <!-- Optionally add data-auth-url="https://your.site/telegram-auth" to enable redirect mode -->
@@ -45,6 +51,9 @@
     // This function will be called by the widget with the user object:
     // user = { id, first_name, last_name?, username?, photo_url?, auth_date, hash }
     function onTelegramAuth(user) {
+      console.log("I am in second function");
+      console.log(user);
+      console.log(onTelegramAuth);
       // Pretty-print JSON into the <pre>
       const el = document.getElementById('tg-response');
       el.textContent = JSON.stringify(user, null, 2);
